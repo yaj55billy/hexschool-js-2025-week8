@@ -617,6 +617,25 @@
 	color: #ffffff;
 }
 
+.cardItem-quantity {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+
+	.cardItem-updateBtn a {
+		text-decoration: none;
+		display: inline-block;
+		padding: 10px;
+		font-size: 24px;
+		color: #000000;
+	}
+
+	.cardItem-updateBtn a:hover {
+		color: #6a33f8;
+		transform: scale(1.3);
+	}
+}
+
 .orderInfo {
 	padding: 60px 0;
 }

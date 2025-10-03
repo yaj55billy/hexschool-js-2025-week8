@@ -1,9 +1,13 @@
 import { productAPI, cartAPI } from './api.js';
+import { formatPriceWithCurrency } from './utils.js';
 
-const productWrap = document.querySelector('.productWrap');
-const productSelect = document.querySelector('.productSelect');
+const productWrap = document.querySelector('.productWrap'),
+	productSelect = document.querySelector('.productSelect'),
+	shoppingCartTbody = document.querySelector('.shoppingCart-tbody'),
+	shoppingCartTotalPrice = document.querySelector('.shoppingCart-totalPrice');
 
-let allProducts = [];
+let allProducts = [],
+	allCarts = [];
 
 function renderProducts(filteredProducts) {
 	productWrap.innerHTML = filteredProducts
@@ -16,8 +20,8 @@ function renderProducts(filteredProducts) {
 					/>
 					<a href="#" class="addCardBtn">加入購物車</a>
 					<h3>${product.title}</h3>
-					<del class="originPrice">NT$${product.origin_price}</del>
-					<p class="nowPrice">NT$${product.price}</p>
+					<del class="originPrice">${formatPriceWithCurrency(product.origin_price)}</del>
+					<p class="nowPrice">${formatPriceWithCurrency(product.price)}</p>
 				</li>`
 		)
 		.join('');
@@ -38,7 +42,7 @@ async function fetchProducts() {
 		allProducts = response.data.products;
 		filterProducts();
 	} catch (error) {
-		console.error('載入產品失敗:', error);
+		console.error('資料取得失敗，請稍後再嘗試', error);
 	}
 }
 
@@ -47,25 +51,69 @@ function handleCategoryChange() {
 	filterProducts(selectedCategory);
 }
 
+function renderCarts() {
+	if (allCarts.length === 0) {
+		shoppingCartTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px 0;">購物車目前沒有商品</td></tr>`;
+		shoppingCartTotalPrice.textContent = formatPriceWithCurrency(0);
+		return;
+	}
+
+	shoppingCartTbody.innerHTML = allCarts
+		.map(
+			(cart) =>
+				`<tr>
+          <td>
+            <div class="cardItem-title">
+              <img src="${cart.product.images}" alt="${cart.product.title}" />
+              <p>${cart.product.title}</p>
+            </div>
+          </td>
+          <td>${formatPriceWithCurrency(cart.product.price)}</td>
+          <td>
+            <div class="cardItem-quantity">
+              <div class="cardItem-updateBtn">
+                <a href="#" class="material-icons" id="removeBtn"> remove </a>
+              </div>
+              ${cart.quantity}
+              <div class="cardItem-updateBtn">
+                <a href="#" class="material-icons" id="addBtn"> add </a>
+              </div>
+            </div>
+          </td>
+          <td>${formatPriceWithCurrency(
+						cart.product.price * cart.quantity
+					)}</td>
+          <td class="discardBtn">
+            <a href="#" class="material-icons"> clear </a>
+          </td>
+        </tr>`
+		)
+		.join('');
+
+	shoppingCartTotalPrice.textContent = formatPriceWithCurrency(
+		allCarts.reduce(
+			(total, cart) => total + cart.product.price * cart.quantity,
+			0
+		)
+	);
+}
+
+async function fetchCarts() {
+	try {
+		const response = await cartAPI.getCarts();
+		allCarts = response.data.carts;
+	} catch (error) {
+		console.error('資料取得失敗，請稍後再嘗試', error);
+	} finally {
+		renderCarts();
+	}
+}
+
 async function initializeApp() {
 	await fetchProducts();
+	await fetchCarts();
 
 	productSelect.addEventListener('change', handleCategoryChange);
 }
 
 initializeApp();
-
-// 載入購物車資料
-// function FetchCartData() {
-// 	return cartAPI
-// 		.getCarts()
-// 		.then((response) => {
-// 			console.log('購物車資料:', response.data);
-// 			// 這裡可以處理購物車資料，例如更新購物車 UI
-// 			return response.data;
-// 		})
-// 		.catch((error) => {
-// 			console.error('載入購物車失敗:', error);
-// 			throw error;
-// 		});
-// }
