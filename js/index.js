@@ -9,6 +9,7 @@ const productWrap = document.querySelector('.productWrap'),
 let allProducts = [],
 	allCarts = [];
 
+/* ------------ 產品相關 ------------ */
 function renderProducts(filteredProducts) {
 	productWrap.innerHTML = filteredProducts
 		.map(
@@ -18,13 +19,15 @@ function renderProducts(filteredProducts) {
 						src="${product.images}"
 						alt="${product.title}"
 					/>
-					<a href="#" class="addCardBtn">加入購物車</a>
+					<a href="#" class="addCardBtn" data-id="${product.id}">加入購物車</a>
 					<h3>${product.title}</h3>
 					<del class="originPrice">${formatPriceWithCurrency(product.origin_price)}</del>
 					<p class="nowPrice">${formatPriceWithCurrency(product.price)}</p>
 				</li>`
 		)
 		.join('');
+
+	// addCardBtn = document.querySelectorAll('.addCardBtn');
 }
 
 function filterProducts(category = '全部') {
@@ -51,6 +54,7 @@ function handleCategoryChange() {
 	filterProducts(selectedCategory);
 }
 
+/* ------------ 購物車相關 ------------ */
 function renderCarts() {
 	if (allCarts.length === 0) {
 		shoppingCartTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px 0;">購物車目前沒有商品</td></tr>`;
@@ -101,6 +105,8 @@ function renderCarts() {
 async function fetchCarts() {
 	try {
 		const response = await cartAPI.getCarts();
+		console.log(response.data.carts);
+
 		allCarts = response.data.carts;
 	} catch (error) {
 		console.error('資料取得失敗，請稍後再嘗試', error);
@@ -109,11 +115,51 @@ async function fetchCarts() {
 	}
 }
 
+async function handleAddToCart(productId) {
+	try {
+		// 檢查購物車中是否已有相同商品
+		const existingCartItem = allCarts.find(
+			(cart) => cart.product.id === productId
+		);
+
+		if (existingCartItem) {
+			// 更新現有商品數量
+			await cartAPI.updateCart({
+				data: {
+					id: existingCartItem.id,
+					quantity: existingCartItem.quantity + 1,
+				},
+			});
+		} else {
+			await cartAPI.addToCart({
+				data: {
+					productId: productId,
+					quantity: 1,
+				},
+			});
+		}
+
+		await fetchCarts();
+	} catch (error) {
+		console.error('操作失敗，請稍後再試', error);
+	}
+}
+
+/* ------------ INIT ------------ */
 async function initializeApp() {
 	await fetchProducts();
 	await fetchCarts();
 
 	productSelect.addEventListener('change', handleCategoryChange);
+
+	// 事件委派
+	productWrap.addEventListener('click', (event) => {
+		if (event.target.classList.contains('addCardBtn')) {
+			event.preventDefault();
+			const productId = event.target.dataset.id;
+			handleAddToCart(productId);
+		}
+	});
 }
 
 initializeApp();
