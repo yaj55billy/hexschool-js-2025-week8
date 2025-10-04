@@ -4,7 +4,8 @@ import { formatPriceWithCurrency } from './utils.js';
 const productWrap = document.querySelector('.productWrap'),
 	productSelect = document.querySelector('.productSelect'),
 	shoppingCartTbody = document.querySelector('.shoppingCart-tbody'),
-	shoppingCartTotalPrice = document.querySelector('.shoppingCart-totalPrice');
+	shoppingCartTotalPrice = document.querySelector('.shoppingCart-totalPrice'),
+	deleteCartsBtn = document.querySelector('.deleteCartsBtn');
 
 let allProducts = [],
 	allCarts = [];
@@ -26,8 +27,6 @@ function renderProducts(filteredProducts) {
 				</li>`
 		)
 		.join('');
-
-	// addCardBtn = document.querySelectorAll('.addCardBtn');
 }
 
 function filterProducts(category = '全部') {
@@ -88,7 +87,9 @@ function renderCarts() {
 						cart.product.price * cart.quantity
 					)}</td>
           <td class="discardBtn">
-            <a href="#" class="material-icons"> clear </a>
+            <a href="#" class="material-icons cardItem-deleteBtn" data-id="${
+							cart.id
+						}"> clear </a>
           </td>
         </tr>`
 		)
@@ -105,7 +106,7 @@ function renderCarts() {
 async function fetchCarts() {
 	try {
 		const response = await cartAPI.getCarts();
-		console.log(response.data.carts);
+		// console.log(response.data.carts);
 
 		allCarts = response.data.carts;
 	} catch (error) {
@@ -145,6 +146,29 @@ async function handleAddToCart(productId) {
 	}
 }
 
+async function handleDeleteCartItem(cartItemId) {
+	try {
+		await cartAPI.deleteCartItem(cartItemId);
+		await fetchCarts();
+	} catch (error) {
+		console.error('操作失敗，請稍後再試', error);
+	}
+}
+
+async function handleDeleteAllCartItems() {
+	if (allCarts.length === 0) {
+		alert('購物車目前沒有商品');
+		return;
+	}
+
+	try {
+		await cartAPI.clearAllCarts();
+		await fetchCarts();
+	} catch (error) {
+		console.error('操作失敗，請稍後再試', error);
+	}
+}
+
 /* ------------ INIT ------------ */
 async function initializeApp() {
 	await fetchProducts();
@@ -159,6 +183,19 @@ async function initializeApp() {
 			const productId = event.target.dataset.id;
 			handleAddToCart(productId);
 		}
+	});
+
+	shoppingCartTbody.addEventListener('click', (event) => {
+		if (event.target.classList.contains('cardItem-deleteBtn')) {
+			event.preventDefault();
+			const cartItemId = event.target.dataset.id;
+			handleDeleteCartItem(cartItemId);
+		}
+	});
+
+	deleteCartsBtn.addEventListener('click', (event) => {
+		event.preventDefault();
+		handleDeleteAllCartItems();
 	});
 }
 
