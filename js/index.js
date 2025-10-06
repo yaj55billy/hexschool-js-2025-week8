@@ -64,7 +64,7 @@ function renderCarts() {
 	shoppingCartTbody.innerHTML = allCarts
 		.map(
 			(cart) =>
-				`<tr>
+				`<tr data-id="${cart.id}">
           <td>
             <div class="cardItem-title">
               <img src="${cart.product.images}" alt="${cart.product.title}" />
@@ -75,11 +75,11 @@ function renderCarts() {
           <td>
             <div class="cardItem-quantity">
               <div class="cardItem-updateBtn">
-                <a href="#" class="material-icons" id="removeBtn"> remove </a>
+                <a href="#" class="material-icons quantity-decrease-btn"> remove </a>
               </div>
               ${cart.quantity}
               <div class="cardItem-updateBtn">
-                <a href="#" class="material-icons" id="addBtn"> add </a>
+                <a href="#" class="material-icons quantity-increase-btn"> add </a>
               </div>
             </div>
           </td>
@@ -87,9 +87,7 @@ function renderCarts() {
 						cart.product.price * cart.quantity
 					)}</td>
           <td class="discardBtn">
-            <a href="#" class="material-icons cardItem-deleteBtn" data-id="${
-							cart.id
-						}"> clear </a>
+            <a href="#" class="material-icons cardItem-deleteBtn"> clear </a>
           </td>
         </tr>`
 		)
@@ -169,6 +167,38 @@ async function handleDeleteAllCartItems() {
 	}
 }
 
+async function handleUpdateCartQuantity(cartItemId, quantityChange) {
+	try {
+		const cartItem = allCarts.find((cart) => cart.id === cartItemId);
+
+		if (!cartItem) {
+			console.error('找不到購物車項目');
+			return;
+		}
+
+		const newQuantity = cartItem.quantity + quantityChange;
+
+		// 如果新數量小於等於 0，詢問是否刪除商品
+		if (newQuantity <= 0) {
+			if (confirm('數量不能小於 1，是否要移除此商品？')) {
+				await handleDeleteCartItem(cartItemId);
+			}
+			return;
+		}
+
+		await cartAPI.updateCart({
+			data: {
+				id: cartItemId,
+				quantity: newQuantity,
+			},
+		});
+
+		await fetchCarts();
+	} catch (error) {
+		console.error('更新數量失敗:', error);
+	}
+}
+
 /* ------------ INIT ------------ */
 async function initializeApp() {
 	await fetchProducts();
@@ -180,16 +210,26 @@ async function initializeApp() {
 	productWrap.addEventListener('click', (event) => {
 		if (event.target.classList.contains('addCardBtn')) {
 			event.preventDefault();
+			console.log(event);
 			const productId = event.target.dataset.id;
 			handleAddToCart(productId);
 		}
 	});
 
 	shoppingCartTbody.addEventListener('click', (event) => {
+		event.preventDefault();
+		const cartItemRow = event.target.closest('tr'); // 找到 tr 父元素
+		const cartItemId = cartItemRow.dataset.id;
+
 		if (event.target.classList.contains('cardItem-deleteBtn')) {
-			event.preventDefault();
-			const cartItemId = event.target.dataset.id;
 			handleDeleteCartItem(cartItemId);
+		}
+		if (event.target.classList.contains('quantity-decrease-btn')) {
+			handleUpdateCartQuantity(cartItemId, -1);
+		}
+
+		if (event.target.classList.contains('quantity-increase-btn')) {
+			handleUpdateCartQuantity(cartItemId, 1);
 		}
 	});
 
