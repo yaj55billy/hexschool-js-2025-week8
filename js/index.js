@@ -1,5 +1,11 @@
 import { productAPI, cartAPI } from './api.js';
 import { formatPriceWithCurrency } from './utils.js';
+import {
+	showSuccessToast,
+	showErrorToast,
+	showWarningToast,
+	showConfirmDialog,
+} from './sweetalert.js';
 
 const productWrap = document.querySelector('.productWrap'),
 	productSelect = document.querySelector('.productSelect'),
@@ -129,6 +135,7 @@ async function handleAddToCart(productId) {
 					quantity: existingCartItem.quantity + 1,
 				},
 			});
+			showSuccessToast('商品數量已更新！');
 		} else {
 			await cartAPI.addToCart({
 				data: {
@@ -136,11 +143,13 @@ async function handleAddToCart(productId) {
 					quantity: 1,
 				},
 			});
+			showSuccessToast('商品已加入購物車！');
 		}
 
 		await fetchCarts();
 	} catch (error) {
-		console.error('操作失敗，請稍後再試', error);
+		console.error(error);
+		showErrorToast('加入購物車失敗，請稍後再試！');
 	}
 }
 
@@ -148,22 +157,35 @@ async function handleDeleteCartItem(cartItemId) {
 	try {
 		await cartAPI.deleteCartItem(cartItemId);
 		await fetchCarts();
+		showSuccessToast('商品已移除！');
 	} catch (error) {
-		console.error('操作失敗，請稍後再試', error);
+		console.error(error);
+		showErrorToast('移除商品失敗，請稍後再試！');
 	}
 }
 
 async function handleDeleteAllCartItems() {
 	if (allCarts.length === 0) {
-		alert('購物車目前沒有商品');
+		showWarningToast('購物車目前沒有商品');
 		return;
 	}
+
+	const confirmed = await showConfirmDialog(
+		'清空購物車',
+		'確定要清空購物車中的所有商品嗎？',
+		'確定清空',
+		'取消'
+	);
+
+	if (!confirmed) return;
 
 	try {
 		await cartAPI.clearAllCarts();
 		await fetchCarts();
+		showSuccessToast('購物車已清空！');
 	} catch (error) {
-		console.error('操作失敗，請稍後再試', error);
+		console.error(error);
+		showErrorToast('清空購物車失敗，請稍後再試！');
 	}
 }
 
@@ -172,7 +194,7 @@ async function handleUpdateCartQuantity(cartItemId, quantityChange) {
 		const cartItem = allCarts.find((cart) => cart.id === cartItemId);
 
 		if (!cartItem) {
-			console.error('找不到購物車項目');
+			showErrorToast('找不到購物車項目');
 			return;
 		}
 
@@ -180,7 +202,14 @@ async function handleUpdateCartQuantity(cartItemId, quantityChange) {
 
 		// 如果新數量小於等於 0，詢問是否刪除商品
 		if (newQuantity <= 0) {
-			if (confirm('數量不能小於 1，是否要移除此商品？')) {
+			const confirmed = await showConfirmDialog(
+				'移除商品',
+				'數量不能小於 1，是否要移除此商品？',
+				'移除',
+				'取消'
+			);
+
+			if (confirmed) {
 				await handleDeleteCartItem(cartItemId);
 			}
 			return;
@@ -194,8 +223,10 @@ async function handleUpdateCartQuantity(cartItemId, quantityChange) {
 		});
 
 		await fetchCarts();
+		showSuccessToast('數量已更新！');
 	} catch (error) {
-		console.error('更新數量失敗:', error);
+		console.error(error);
+		showErrorToast('更新數量失敗，請稍後再試！');
 	}
 }
 
