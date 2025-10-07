@@ -8,31 +8,11 @@ import {
 } from './sweetalert.js';
 
 const orderPageTableBody = document.querySelector('.orderPage-table-body');
+const discardAllBtn = document.querySelector('.discardAllBtn');
 
 let allOrders = [];
 
 /* ------------ 訂單相關 ------------ */
-
-// const adminOrderAPI = {
-//   // 更新訂單狀態
-//   updateOrder(data) {
-//     return adminRequest.put(`/api/livejs/v1/admin/${apiPath}/orders`, data);
-//     //     {
-//     //   "data": {
-//     //     "id": "訂單 ID (String)",
-//     //     "paid": true
-//     //   }
-//     // }
-//   },
-//   // 刪除全部訂單
-//   deleteAllOrders() {
-//     return adminRequest.delete(`/api/livejs/v1/admin/${apiPath}/orders`);
-//   },
-//   // 刪除特定訂單
-//   deleteOrder(id) {
-//     return adminRequest.delete(`/api/livejs/v1/admin/${apiPath}/orders/${id}`);
-//   },
-// };
 
 function renderOrders() {
 	if (allOrders.length === 0) {
@@ -82,6 +62,87 @@ function renderOrders() {
 		.join('');
 }
 
+async function handleToggleOrderStatus(orderId) {
+	try {
+		const order = allOrders.find((order) => order.id === orderId);
+
+		if (!order) {
+			showErrorToast('找不到訂單資料');
+			return;
+		}
+
+		const newStatus = !order.paid;
+		const statusText = newStatus ? '已處理' : '未處理';
+
+		const confirmed = await showConfirmDialog(
+			'更新訂單狀態',
+			`確定要將訂單狀態更改為「${statusText}」嗎？`,
+			'確定更新',
+			'取消'
+		);
+
+		if (!confirmed) return;
+
+		await adminOrderAPI.updateOrder({
+			data: {
+				id: orderId,
+				paid: newStatus,
+			},
+		});
+
+		showSuccessToast(`訂單狀態已更新為「${statusText}」`);
+		await fetchOrders();
+	} catch (error) {
+		console.error(error);
+		showErrorToast('更新訂單狀態失敗，請稍後再試');
+	}
+}
+
+async function handleDeleteOrder(orderId) {
+	try {
+		const confirmed = await showConfirmDialog(
+			'刪除訂單',
+			'確定要刪除此訂單嗎？此操作無法復原。',
+			'確定刪除',
+			'取消'
+		);
+
+		if (!confirmed) return;
+
+		await adminOrderAPI.deleteOrder(orderId);
+		showSuccessToast('此筆訂單已刪除');
+		await fetchOrders();
+	} catch (error) {
+		console.error(error);
+		showErrorToast('刪除訂單失敗，請稍後再試');
+	}
+}
+
+async function handleDeleteAllOrders() {
+	if (allOrders.length === 0) {
+		showWarningToast('目前沒有訂單可刪除');
+		return;
+	}
+
+	const confirmed = await showConfirmDialog(
+		'刪除全部訂單',
+		'確定要刪除所有訂單嗎？此操作無法復原。',
+		'確定刪除',
+		'取消'
+	);
+
+	if (!confirmed) return;
+
+	try {
+		await adminOrderAPI.deleteAllOrders();
+		showSuccessToast('所有訂單已刪除');
+		await fetchOrders();
+	} catch (error) {
+		console.error(error);
+		showErrorToast('刪除全部訂單失敗，請稍後再試');
+	}
+}
+
 async function fetchOrders() {
 	try {
 		const response = await adminOrderAPI.getOrders();
@@ -95,6 +156,28 @@ async function fetchOrders() {
 /* ------------ INIT ------------ */
 async function initializeApp() {
 	await fetchOrders();
+
+	orderPageTableBody.addEventListener('click', async (event) => {
+		const orderRow = event.target.closest('tr');
+		const orderId = orderRow?.dataset.id;
+
+		if (!orderId) return;
+
+		if (event.target.classList.contains('status-toggle-btn')) {
+			event.preventDefault();
+			await handleToggleOrderStatus(orderId);
+		}
+
+		if (event.target.classList.contains('delSingleOrder-Btn')) {
+			event.preventDefault();
+			await handleDeleteOrder(orderId);
+		}
+	});
+
+	discardAllBtn.addEventListener('click', async (event) => {
+		event.preventDefault();
+		await handleDeleteAllOrders();
+	});
 }
 
 initializeApp();
