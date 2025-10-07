@@ -50,63 +50,65 @@
 							<th>操作</th>
 						</tr>
 					</thead>
-					<tr>
-						<td>10088377474</td>
-						<td>
-							<p>小杰</p>
-							<p>0912345678</p>
-						</td>
-						<td>高雄市前鎮區六合路183巷66號</td>
-						<td>cccexample@gmail.com</td>
-						<td>
-							<p>Louvre 雙人床架</p>
-						</td>
-						<td>2021/03/08</td>
-						<td class="orderStatus">
-							<a href="#">未處理</a>
-						</td>
-						<td>
-							<input type="button" class="delSingleOrder-Btn" value="刪除" />
-						</td>
-					</tr>
-					<tr>
-						<td>10088377475</td>
-						<td>
-							<p>麥特</p>
-							<p>0912345678</p>
-						</td>
-						<td>桃園市平鎮區榮耀路13巷90號</td>
-						<td>wwexample@gmail.com</td>
-						<td>
-							<p>Louvre 雙人床架</p>
-						</td>
-						<td>2021/03/08</td>
-						<td class="orderStatus">
-							<a href="#">已處理</a>
-						</td>
-						<td>
-							<input type="button" class="delSingleOrder-Btn" value="刪除" />
-						</td>
-					</tr>
-					<tr>
-						<td>10088377581</td>
-						<td>
-							<p>歐爾</p>
-							<p>0912345678</p>
-						</td>
-						<td>高雄市苓雅區武廟路22巷188號</td>
-						<td>68example@gmail.com</td>
-						<td>
-							<p>Louvre 雙人床架</p>
-						</td>
-						<td>2021/03/08</td>
-						<td class="orderStatus">
-							<a href="#">未處理</a>
-						</td>
-						<td>
-							<input type="button" class="delSingleOrder-Btn" value="刪除" />
-						</td>
-					</tr>
+					<tbody class="orderPage-table-body">
+						<!-- <tr>
+							<td>10088377474</td>
+							<td>
+								<p>小杰</p>
+								<p>0912345678</p>
+							</td>
+							<td>高雄市前鎮區六合路183巷66號</td>
+							<td>cccexample@gmail.com</td>
+							<td>
+								<p>Louvre 雙人床架</p>
+							</td>
+							<td>2021/03/08</td>
+							<td class="orderStatus">
+								<a href="#">未處理</a>
+							</td>
+							<td>
+								<input type="button" class="delSingleOrder-Btn" value="刪除" />
+							</td>
+						</tr>
+						<tr>
+							<td>10088377475</td>
+							<td>
+								<p>麥特</p>
+								<p>0912345678</p>
+							</td>
+							<td>桃園市平鎮區榮耀路13巷90號</td>
+							<td>wwexample@gmail.com</td>
+							<td>
+								<p>Louvre 雙人床架</p>
+							</td>
+							<td>2021/03/08</td>
+							<td class="orderStatus">
+								<a href="#">已處理</a>
+							</td>
+							<td>
+								<input type="button" class="delSingleOrder-Btn" value="刪除" />
+							</td>
+						</tr>
+						<tr>
+							<td>10088377581</td>
+							<td>
+								<p>歐爾</p>
+								<p>0912345678</p>
+							</td>
+							<td>高雄市苓雅區武廟路22巷188號</td>
+							<td>68example@gmail.com</td>
+							<td>
+								<p>Louvre 雙人床架</p>
+							</td>
+							<td>2021/03/08</td>
+							<td class="orderStatus">
+								<a href="#">未處理</a>
+							</td>
+							<td>
+								<input type="button" class="delSingleOrder-Btn" value="刪除" />
+							</td>
+						</tr> -->
+					</tbody>
 				</table>
 			</div>
 		</section>
@@ -139,27 +141,6 @@
 				menu.classList.remove('openMenu');
 			}
 		</script>
-
-		<script>
-			// C3.js
-			let chart = c3.generate({
-				bindto: '#chart', // HTML 元素綁定
-				data: {
-					type: 'pie',
-					columns: [
-						['Louvre 雙人床架', 1],
-						['Antony 雙人床架', 2],
-						['Anty 雙人床架', 3],
-						['其他', 4],
-					],
-					colors: {
-						'Louvre 雙人床架': '#DACBFF',
-						'Antony 雙人床架': '#9D7FEA',
-						'Anty 雙人床架': '#5434A7',
-						其他: '#301E5F',
-					},
-				},
-			});
-		</script>
+		<script type="module" src="js/dashboard.js"></script>
 	</body>
 </html>

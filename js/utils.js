@@ -2,6 +2,15 @@ export function formatPriceWithCurrency(price) {
 	return `NT$${price.toLocaleString()}`;
 }
 
+export function formatOrderDate(timestamp) {
+	const date = new Date(timestamp * 1000);
+	return date.toLocaleDateString('zh-TW', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+	});
+}
+
 export function validatePhone(phone) {
 	const phoneRegex = /^09\d{8}$/;
 	return phoneRegex.test(phone);
