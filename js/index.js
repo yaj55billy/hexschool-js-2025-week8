@@ -1,5 +1,5 @@
-import { productAPI, cartAPI } from './api.js';
-import { formatPriceWithCurrency } from './utils.js';
+import { productAPI, cartAPI, orderAPI } from './api.js';
+import { formatPriceWithCurrency, validateOrderForm } from './utils.js';
 import {
 	showSuccessToast,
 	showErrorToast,
@@ -11,7 +11,8 @@ const productWrap = document.querySelector('.productWrap'),
 	productSelect = document.querySelector('.productSelect'),
 	shoppingCartTbody = document.querySelector('.shoppingCart-tbody'),
 	shoppingCartTotalPrice = document.querySelector('.shoppingCart-totalPrice'),
-	deleteCartsBtn = document.querySelector('.deleteCartsBtn');
+	deleteCartsBtn = document.querySelector('.deleteCartsBtn'),
+	orderInfoForm = document.querySelector('.orderInfo-form');
 
 let allProducts = [],
 	allCarts = [];
@@ -230,6 +231,105 @@ async function handleUpdateCartQuantity(cartItemId, quantityChange) {
 	}
 }
 
+/* ------------ 訂單送出相關 ------------ */
+
+function displayValidationErrors(errors) {
+	clearValidationErrors();
+
+	errors.forEach((error) => {
+		const inputElement = document.getElementById(error.field);
+		const messageElement = inputElement
+			.closest('.orderInfo-inputWrap')
+			.querySelector('.orderInfo-message');
+
+		if (messageElement) {
+			messageElement.textContent = error.message;
+			messageElement.style.display = 'block';
+			messageElement.style.color = '#d33';
+		}
+		inputElement.style.borderColor = '#d33';
+	});
+}
+
+function clearValidationErrors() {
+	const messageElements = document.querySelectorAll('.orderInfo-message');
+	messageElements.forEach((element) => {
+		element.textContent = '';
+		element.style.display = 'none';
+		element.style.color = '';
+	});
+
+	const inputElements = document.querySelectorAll('.orderInfo-input');
+	inputElements.forEach((element) => {
+		element.style.borderColor = '';
+	});
+}
+
+async function handleSubmitOrder(event) {
+	event.preventDefault();
+
+	if (allCarts.length === 0) {
+		showWarningToast('購物車目前沒有商品，無法送出訂單');
+		return;
+	}
+
+	const formData = new FormData(orderInfoForm);
+	const orderFormData = {
+		name: formData.get('customerName'),
+		tel: formData.get('customerPhone'),
+		email: formData.get('customerEmail'),
+		address: formData.get('customerAddress'),
+		payment: formData.get('tradeWay'),
+	};
+
+	const validation = validateOrderForm(orderFormData);
+
+	if (!validation.isValid) {
+		displayValidationErrors(validation.errors);
+		return;
+	}
+
+	// 驗證成功，清除錯誤訊息
+	clearValidationErrors();
+
+	const confirmed = await showConfirmDialog(
+		'確認送出訂單',
+		`確定要送出訂單嗎？\n\n總金額：${formatPriceWithCurrency(
+			allCarts.reduce(
+				(total, cart) => total + cart.product.price * cart.quantity,
+				0
+			)
+		)}`,
+		'確定送出',
+		'取消'
+	);
+
+	if (!confirmed) return;
+
+	// 送出訂單
+	try {
+		const orderData = {
+			data: {
+				user: {
+					name: orderFormData.name,
+					tel: orderFormData.tel,
+					email: orderFormData.email,
+					address: orderFormData.address,
+					payment: orderFormData.payment,
+				},
+			},
+		};
+
+		await orderAPI.createOrder(orderData);
+		showSuccessToast('訂單送出成功！感謝您的購買');
+		orderInfoForm.reset();
+		await fetchCarts();
+	} catch (error) {
+		console.error(error);
+		showErrorToast('訂單送出失敗，請稍後再試');
+	}
+}
+
 /* ------------ INIT ------------ */
 async function initializeApp() {
 	await fetchProducts();
@@ -268,6 +368,8 @@ async function initializeApp() {
 		event.preventDefault();
 		handleDeleteAllCartItems();
 	});
+
+	orderInfoForm.addEventListener('submit', handleSubmitOrder);
 }
 
 initializeApp();

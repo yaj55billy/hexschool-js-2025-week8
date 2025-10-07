@@ -667,22 +667,17 @@
 }
 
 .orderInfo-message {
-	position: absolute;
-	white-space: nowrap;
-	left: 103%;
-	top: 50%;
-	-webkit-transform: translateY(-50%);
-	transform: translateY(-50%);
-	color: #c72424;
+	margin-top: 4px;
+	font-size: 14px;
 }
 
-@media (max-width: 767px) {
-	.orderInfo-message {
-		position: static;
-		-webkit-transform: translateY(0);
-		transform: translateY(0);
-	}
-}
+// @media (max-width: 767px) {
+// 	.orderInfo-message {
+// 		position: static;
+// 		-webkit-transform: translateY(0);
+// 		transform: translateY(0);
+// 	}
+// }
 
 .orderInfo-btn {
 	display: block;
