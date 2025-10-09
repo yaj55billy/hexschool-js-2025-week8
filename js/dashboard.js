@@ -156,17 +156,7 @@ async function fetchOrders() {
 		renderOrders();
 		initProductChart();
 		initCategoryChart();
-
-		const selectedChartType = chartSelect.value;
-		sectionTitle.textContent = selectedChartType;
-
-		if (selectedChartType === '全產品類別營收比重') {
-			productChartContainer.style.display = 'none';
-			categoryChartContainer.style.display = 'block';
-		} else {
-			productChartContainer.style.display = 'block';
-			categoryChartContainer.style.display = 'none';
-		}
+		switchChartDisplay();
 	} catch (error) {
 		console.error('載入訂單失敗:', error);
 		showErrorToast('載入訂單失敗，請稍後再試');
@@ -212,19 +202,11 @@ function processOrdersForCategoryChart() {
 
 	const categoryRevenue = {};
 
-	allOrders.forEach((order, orderIndex) => {
+	allOrders.forEach((order) => {
 		if (order.products && order.products.length > 0) {
 			order.products.forEach((product, productIndex) => {
-				console.log(`  商品 ${productIndex + 1}:`, {
-					title: product.title,
-					category: product.category,
-					price: product.price,
-					quantity: product.quantity,
-				});
-
 				const quantity = product.quantity || 1;
 				const revenue = product.price * quantity;
-				// 使用實際的 category，如果沒有則歸類為「未分類」
 				const category = product.category || '未分類';
 
 				if (categoryRevenue[category]) {
@@ -243,39 +225,20 @@ function processOrdersForCategoryChart() {
 		(a, b) => b[1] - a[1]
 	);
 
-	if (chartColumns.length === 0) {
-		console.log('沒有有效的類別資料，返回預設值');
-		return [['無資料', 1]];
-	}
-
 	return chartColumns;
 }
 
-// 顏色處理
-function generateChartColors(columns, chartType = 'product') {
-	let colorPalette;
-
-	if (chartType === 'category') {
-		colorPalette = [
-			'#5434A7',
-			'#9D7FEA',
-			'#DACBFF',
-			'#301E5F',
-			'#8B5CF6',
-			'#7C3AED',
-			'#A855F7',
-			'#C084FC',
-		];
-	} else {
-		colorPalette = [
-			'#DACBFF',
-			'#9D7FEA',
-			'#5434A7',
-			'#301E5F',
-			'#8B5CF6',
-			'#7C3AED',
-		];
-	}
+function generateChartColors(columns) {
+	const colorPalette = [
+		'#DACBFF',
+		'#9D7FEA',
+		'#5434A7',
+		'#301E5F',
+		'#8B5CF6',
+		'#7C3AED',
+		'#A855F7',
+		'#C084FC',
+	];
 
 	const colors = {};
 	columns.forEach(([title], index) => {
@@ -291,7 +254,7 @@ function initProductChart() {
 	}
 
 	const chartColumns = processOrdersForChart();
-	const chartColors = generateChartColors(chartColumns, 'product');
+	const chartColors = generateChartColors(chartColumns);
 
 	productChart = c3.generate({
 		bindto: '#productChart',
@@ -309,7 +272,7 @@ function initCategoryChart() {
 	}
 
 	const chartColumns = processOrdersForCategoryChart();
-	const chartColors = generateChartColors(chartColumns, 'category');
+	const chartColors = generateChartColors(chartColumns);
 
 	categoryChart = c3.generate({
 		bindto: '#categoryChart',
@@ -321,13 +284,8 @@ function initCategoryChart() {
 	});
 }
 
-/**
- * 圖表切換
- */
-function handleChartChange() {
+function switchChartDisplay() {
 	const selectedValue = chartSelect.value;
-	console.log('切換圖表類型:', selectedValue);
-
 	sectionTitle.textContent = selectedValue;
 
 	if (selectedValue === '全品項營收比重') {
@@ -365,7 +323,7 @@ async function initializeApp() {
 		await handleDeleteAllOrders();
 	});
 
-	chartSelect.addEventListener('change', handleChartChange);
+	chartSelect.addEventListener('change', switchChartDisplay);
 }
 
 initializeApp();
