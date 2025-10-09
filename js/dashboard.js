@@ -9,8 +9,14 @@ import {
 
 const orderPageTableBody = document.querySelector('.orderPage-table-body');
 const discardAllBtn = document.querySelector('.discardAllBtn');
+const chartSelect = document.querySelector('#chartSelect');
+const sectionTitle = document.querySelector('.section-title');
+const productChartContainer = document.querySelector('#productChart');
+const categoryChartContainer = document.querySelector('#categoryChart');
 
 let allOrders = [];
+let productChart = null;
+let categoryChart = null;
 
 /* ------------ 訂單相關 ------------ */
 
@@ -148,8 +154,188 @@ async function fetchOrders() {
 		const response = await adminOrderAPI.getOrders();
 		allOrders = response.data.orders;
 		renderOrders();
+		initProductChart();
+		initCategoryChart();
+
+		const selectedChartType = chartSelect.value;
+		sectionTitle.textContent = selectedChartType;
+
+		if (selectedChartType === '全產品類別營收比重') {
+			productChartContainer.style.display = 'none';
+			categoryChartContainer.style.display = 'block';
+		} else {
+			productChartContainer.style.display = 'block';
+			categoryChartContainer.style.display = 'none';
+		}
 	} catch (error) {
-		console.error(error);
+		console.error('載入訂單失敗:', error);
+		showErrorToast('載入訂單失敗，請稍後再試');
+	}
+}
+
+/* ------------ 圖表相關 ------------ */
+function processOrdersForChart() {
+	if (allOrders.length === 0) {
+		return [['無資料', 1]];
+	}
+
+	const productRevenue = {};
+
+	allOrders.forEach((order) => {
+		if (order.products && order.products.length > 0) {
+			order.products.forEach((product) => {
+				const quantity = product.quantity || 1;
+				const revenue = product.price * quantity;
+
+				if (productRevenue[product.title]) {
+					productRevenue[product.title] += revenue;
+				} else {
+					productRevenue[product.title] = revenue;
+				}
+			});
+		}
+	});
+
+	// 轉換為 C3 圖表格式
+	const chartColumns = Object.entries(productRevenue).sort(
+		(a, b) => b[1] - a[1]
+	);
+
+	return chartColumns;
+}
+
+function processOrdersForCategoryChart() {
+	if (allOrders.length === 0) {
+		console.log('沒有訂單資料，返回預設值');
+		return [['無資料', 1]];
+	}
+
+	const categoryRevenue = {};
+
+	allOrders.forEach((order, orderIndex) => {
+		if (order.products && order.products.length > 0) {
+			order.products.forEach((product, productIndex) => {
+				console.log(`  商品 ${productIndex + 1}:`, {
+					title: product.title,
+					category: product.category,
+					price: product.price,
+					quantity: product.quantity,
+				});
+
+				const quantity = product.quantity || 1;
+				const revenue = product.price * quantity;
+				// 使用實際的 category，如果沒有則歸類為「未分類」
+				const category = product.category || '未分類';
+
+				if (categoryRevenue[category]) {
+					categoryRevenue[category] += revenue;
+				} else {
+					categoryRevenue[category] = revenue;
+				}
+			});
+		} else {
+			console.log('此訂單沒有商品資料');
+		}
+	});
+
+	// 轉換為 C3 圖表格式
+	const chartColumns = Object.entries(categoryRevenue).sort(
+		(a, b) => b[1] - a[1]
+	);
+
+	if (chartColumns.length === 0) {
+		console.log('沒有有效的類別資料，返回預設值');
+		return [['無資料', 1]];
+	}
+
+	return chartColumns;
+}
+
+// 顏色處理
+function generateChartColors(columns, chartType = 'product') {
+	let colorPalette;
+
+	if (chartType === 'category') {
+		colorPalette = [
+			'#5434A7',
+			'#9D7FEA',
+			'#DACBFF',
+			'#301E5F',
+			'#8B5CF6',
+			'#7C3AED',
+			'#A855F7',
+			'#C084FC',
+		];
+	} else {
+		colorPalette = [
+			'#DACBFF',
+			'#9D7FEA',
+			'#5434A7',
+			'#301E5F',
+			'#8B5CF6',
+			'#7C3AED',
+		];
+	}
+
+	const colors = {};
+	columns.forEach(([title], index) => {
+		colors[title] = colorPalette[index % colorPalette.length];
+	});
+
+	return colors;
+}
+
+function initProductChart() {
+	if (productChart) {
+		productChart.destroy();
+	}
+
+	const chartColumns = processOrdersForChart();
+	const chartColors = generateChartColors(chartColumns, 'product');
+
+	productChart = c3.generate({
+		bindto: '#productChart',
+		data: {
+			type: 'pie',
+			columns: chartColumns,
+			colors: chartColors,
+		},
+	});
+}
+
+function initCategoryChart() {
+	if (categoryChart) {
+		categoryChart.destroy();
+	}
+
+	const chartColumns = processOrdersForCategoryChart();
+	const chartColors = generateChartColors(chartColumns, 'category');
+
+	categoryChart = c3.generate({
+		bindto: '#categoryChart',
+		data: {
+			type: 'pie',
+			columns: chartColumns,
+			colors: chartColors,
+		},
+	});
+}
+
+/**
+ * 圖表切換
+ */
+function handleChartChange() {
+	const selectedValue = chartSelect.value;
+	console.log('切換圖表類型:', selectedValue);
+
+	sectionTitle.textContent = selectedValue;
+
+	if (selectedValue === '全品項營收比重') {
+		productChartContainer.style.display = 'block';
+		categoryChartContainer.style.display = 'none';
+	} else if (selectedValue === '全產品類別營收比重') {
+		productChartContainer.style.display = 'none';
+		categoryChartContainer.style.display = 'block';
 	}
 }
 
@@ -178,26 +364,8 @@ async function initializeApp() {
 		event.preventDefault();
 		await handleDeleteAllOrders();
 	});
+
+	chartSelect.addEventListener('change', handleChartChange);
 }
 
 initializeApp();
-
-/* ------------ 圖表相關 ------------ */
-let chart = c3.generate({
-	bindto: '#chart', // HTML 元素綁定
-	data: {
-		type: 'pie',
-		columns: [
-			['Louvre 雙人床架', 1],
-			['Antony 雙人床架', 2],
-			['Anty 雙人床架', 3],
-			['其他', 4],
-		],
-		colors: {
-			'Louvre 雙人床架': '#DACBFF',
-			'Antony 雙人床架': '#9D7FEA',
-			'Anty 雙人床架': '#5434A7',
-			其他: '#301E5F',
-		},
-	},
-});

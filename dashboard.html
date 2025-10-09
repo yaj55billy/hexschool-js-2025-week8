@@ -32,7 +32,12 @@
 		</nav>
 		<section class="wrap">
 			<h2 class="section-title">全品項營收比重</h2>
-			<div id="chart"></div>
+			<select name="" id="chartSelect" class="chartSelect">
+				<option value="全品項營收比重" selected="">全品項營收比重</option>
+				<option value="全產品類別營收比重">全產品類別營收比重</option>
+			</select>
+			<div id="productChart" style="display: block"></div>
+			<div id="categoryChart" style="display: none"></div>
 		</section>
 		<section class="wrap orderPage-list">
 			<a href="#" class="discardAllBtn">清除全部訂單</a>
